@@ -56,15 +56,15 @@ export default function ParticleField() {
       const intensity = Math.random();
       
       if (intensity > 0.90) {
-        // Warm amber particles (10%) - like hot dust, brighter
-        colors[i3] = Math.min(1.0, 1.0 * 1.2);   // 20% brighter amber
-        colors[i3 + 1] = Math.min(1.0, 0.75 * 1.2);
-        colors[i3 + 2] = Math.min(1.0, 0.05 * 1.2);
+        // Warm amber particles (10%) - emissive for bloom effect
+        colors[i3] = 2.0;   // Emissive amber values > 1 for bloom
+        colors[i3 + 1] = 1.2;
+        colors[i3 + 2] = 0.1;
       } else if (intensity > 0.80) {
-        // Warm-white transition (10%)
-        colors[i3] = Math.min(1.0, 1.0 * 1.2);
-        colors[i3 + 1] = Math.min(1.0, 0.90 * 1.2);
-        colors[i3 + 2] = Math.min(1.0, 0.75 * 1.2);
+        // Warm-white transition (10%) - slightly emissive
+        colors[i3] = 1.5;
+        colors[i3 + 1] = 1.3;
+        colors[i3 + 2] = 1.0;
       } else if (intensity > 0.77) {
         // Slight cool tint for contrast (3%)
         colors[i3] = Math.min(1.0, 0.85 * 1.2);

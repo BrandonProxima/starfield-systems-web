@@ -3,6 +3,8 @@
 import { useRef, useMemo, useEffect } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
+import { EffectComposer, Bloom, Vignette, Noise, ChromaticAberration } from "@react-three/postprocessing";
+import { BlendFunction } from "postprocessing";
 import * as THREE from "three";
 import ParticleField from "./ParticleField";
 import PrecisionGrid from "./PrecisionGrid";
@@ -72,6 +74,26 @@ export default function ThreeScene() {
           enableRotate={false}
           autoRotate={false}
         />
+        <EffectComposer multisampling={0}>
+          <Bloom 
+            intensity={0.5}
+            luminanceThreshold={0.8}
+            luminanceSmoothing={0.1}
+            mipmapBlur
+          />
+          <Vignette
+            offset={0.1}
+            darkness={0.8}
+            eskil={false}
+          />
+          <Noise
+            opacity={0.15}
+            blendFunction={BlendFunction.MULTIPLY}
+          />
+          <ChromaticAberration
+            offset={[0.0005, 0.0005]}
+          />
+        </EffectComposer>
       </Canvas>
     </div>
   );
