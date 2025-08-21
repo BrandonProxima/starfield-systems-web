@@ -30,17 +30,17 @@ export default function LogoMesh() {
     const breathe = Math.sin(time * 0.25) * 0.05 + 1;
     meshRef.current.scale.set(breathe, breathe, 1);
     
-    // Mouse parallax effect
-    const mouseX = mouse.x * viewport.width * 0.1;
-    const mouseY = mouse.y * viewport.height * 0.1;
+    // Mouse parallax effect - more subtle
+    const mouseX = mouse.x * viewport.width * 0.05;
+    const mouseY = mouse.y * viewport.height * 0.05;
     
-    // Smooth follow mouse with easing
-    meshRef.current.position.x += (mouseX * 0.3 - meshRef.current.position.x) * 0.1;
-    meshRef.current.position.y += (mouseY * 0.3 - meshRef.current.position.y) * 0.1;
+    // Smooth follow mouse with easing - reduced intensity
+    meshRef.current.position.x += (mouseX * 0.15 - meshRef.current.position.x) * 0.05;
+    meshRef.current.position.y += (mouseY * 0.15 - meshRef.current.position.y) * 0.05;
     
-    // Subtle rotation based on mouse position
-    meshRef.current.rotation.y = mouse.x * 0.2;
-    meshRef.current.rotation.x = -mouse.y * 0.1;
+    // Subtle rotation based on mouse position - reduced
+    meshRef.current.rotation.y = mouse.x * 0.05;
+    meshRef.current.rotation.x = -mouse.y * 0.025;
     
     // Floating animation
     meshRef.current.position.z = Math.sin(time * 0.5) * 0.2;
