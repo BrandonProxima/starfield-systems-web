@@ -56,12 +56,7 @@ jobs:
             --include "*.html" \
             --include "*.json"
 
-      - name: Invalidate CloudFront (if configured)
-        if: ${{ secrets.AWS_CLOUDFRONT_DISTRIBUTION_ID != '' }}
-        run: |
-          aws cloudfront create-invalidation \
-            --distribution-id ${{ secrets.AWS_CLOUDFRONT_DISTRIBUTION_ID }} \
-            --paths "/*"
+      # CloudFront invalidation step removed - can be added later if needed
 
       - name: Deployment Success
         run: |
