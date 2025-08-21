@@ -51,30 +51,40 @@ export default function ParticleField() {
       positions[i3 + 1] = y;
       positions[i3 + 2] = z;
       
-      // Whitish colors with very subtle variation
+      // Whitish colors with rare warm amber particles
       const depth = z / 15 + 0.5; // Normalize depth
       const intensity = Math.random();
       
-      if (intensity > 0.95) {
-        // Rare slight blue tint
+      if (intensity > 0.99) {
+        // Very rare warm amber particles (1%) - like hot dust
+        colors[i3] = 0.96;  // #F59E0B converted to RGB
+        colors[i3 + 1] = 0.62;
+        colors[i3 + 2] = 0.04;
+      } else if (intensity > 0.98) {
+        // Rare warm-white transition (1%)
+        colors[i3] = 0.95;
+        colors[i3 + 1] = 0.85;
+        colors[i3 + 2] = 0.75;
+      } else if (intensity > 0.95) {
+        // Rare slight blue tint for contrast
         colors[i3] = 0.85;
         colors[i3 + 1] = 0.85;
         colors[i3 + 2] = 0.9;
-      } else if (intensity > 0.9) {
-        // Slight warm white
-        colors[i3] = 0.9;
-        colors[i3 + 1] = 0.88;
-        colors[i3 + 2] = 0.85;
       } else {
-        // Pure white to off-white
+        // Pure white to off-white (majority)
         const brightness = 0.7 + Math.random() * 0.2; // 70-90% brightness
         colors[i3] = brightness;
         colors[i3 + 1] = brightness;
         colors[i3 + 2] = brightness;
       }
       
-      // Size variation based on depth - much smaller for fine dust
-      sizes[i] = (Math.random() * 0.3 + 0.2) * (1 - depth * 0.3);
+      // Size variation based on depth - warm particles slightly larger
+      if (intensity > 0.99) {
+        // Amber particles are slightly larger, like they're energized
+        sizes[i] = (Math.random() * 0.4 + 0.3) * (1 - depth * 0.3);
+      } else {
+        sizes[i] = (Math.random() * 0.3 + 0.2) * (1 - depth * 0.3);
+      }
     }
     
     return { 

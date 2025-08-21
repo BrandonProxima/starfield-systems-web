@@ -31,11 +31,18 @@ function Scene() {
         castShadow={false}
       />
       
-      {/* Rim light for particle edges */}
+      {/* Cool rim light for particle edges */}
       <pointLight 
         position={[-10, -10, -10]} 
         intensity={0.1} 
         color="#7DD3FC" 
+      />
+      
+      {/* Subtle warm rim light - like distant heat source */}
+      <pointLight 
+        position={[15, -5, -8]} 
+        intensity={0.05} 
+        color="#F59E0B" 
       />
       
       <ParticleField />
