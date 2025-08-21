@@ -44,6 +44,9 @@ export default function Home() {
       {/* Grain texture overlay */}
       <div className="grain" aria-hidden="true" />
       
+      {/* Vignette overlay */}
+      <div className="vignette" aria-hidden="true" />
+      
       {/* 3D Scene with error boundary */}
       <ErrorBoundary>
         <Suspense fallback={<LoadingScreen />}>
