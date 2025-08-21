@@ -2,7 +2,7 @@
 
 import { useRef, useEffect, useState } from "react";
 import { useFrame, useThree, useLoader } from "@react-three/fiber";
-import { TextureLoader } from "three/src/loaders/TextureLoader";
+import { TextureLoader } from "three";
 import * as THREE from "three";
 
 export default function LogoMesh() {
