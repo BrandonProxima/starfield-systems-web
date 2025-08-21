@@ -2,8 +2,8 @@
 
 import { useRef, useEffect, useState } from "react";
 import { useFrame, useThree, useLoader } from "@react-three/fiber";
-import * as THREE from "three";
 import { TextureLoader } from "three";
+import * as THREE from "three";
 
 export default function LogoMesh() {
   const meshRef = useRef<THREE.Mesh>(null!);

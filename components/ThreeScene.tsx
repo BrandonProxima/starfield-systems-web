@@ -14,9 +14,29 @@ function Scene() {
   
   return (
     <>
-      <fog attach="fog" args={["#0A0A0B", 5, 50]} />
-      <ambientLight intensity={0.5} />
-      <pointLight position={[10, 10, 10]} intensity={0.5} color="#0EA5E9" />
+      {/* Exponential fog for natural depth */}
+      <fogExp2 attach="fog" args={["#0A0A0B", 0.025]} />
+      
+      {/* Hemisphere light for more natural lighting */}
+      <hemisphereLight 
+        args={["#0EA5E9", "#050507", 0.3]} 
+        position={[0, 50, 0]} 
+      />
+      
+      {/* Subtle directional light */}
+      <directionalLight 
+        position={[5, 10, 5]} 
+        intensity={0.2} 
+        color="#38BDF8"
+        castShadow={false}
+      />
+      
+      {/* Rim light for particle edges */}
+      <pointLight 
+        position={[-10, -10, -10]} 
+        intensity={0.1} 
+        color="#7DD3FC" 
+      />
       
       <ParticleField />
       <LogoMesh />
