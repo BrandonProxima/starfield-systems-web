@@ -15,8 +15,8 @@ export const metadata: Metadata = {
   keywords: ["technology", "precision", "innovation"],
   authors: [{ name: "Starfield Systems" }],
   icons: {
-    icon: "/favicon.svg",
-    shortcut: "/favicon.svg",
+    icon: "/favicon.ico",
+    shortcut: "/favicon.ico",
     apple: "/apple-touch-icon.png",
   },
   openGraph: {
