@@ -9,6 +9,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://starfieldsystems.com'),
   title: "Starfield Systems",
   description: "Precision technology company",
   keywords: ["technology", "precision", "innovation"],
