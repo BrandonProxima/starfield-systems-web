@@ -9,7 +9,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Starfield Systems - Coming Soon",
+  title: "Starfield Systems",
   description: "Precision technology company",
   keywords: ["technology", "precision", "innovation"],
   authors: [{ name: "Starfield Systems" }],
@@ -18,8 +18,24 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "Starfield Systems",
-    description: "Coming Soon",
+    description: "Precision technology company",
     type: "website",
+    url: "https://starfieldsystems.com",
+    siteName: "Starfield Systems",
+    images: [
+      {
+        url: "https://starfieldsystems.com/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Starfield Systems",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Starfield Systems",
+    description: "Precision technology company",
+    images: ["https://starfieldsystems.com/og-image.png"],
   },
   robots: {
     index: true,
