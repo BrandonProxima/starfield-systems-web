@@ -73,8 +73,8 @@ export default function ParticleField() {
         colors[i3 + 2] = brightness;
       }
       
-      // Size variation based on depth
-      sizes[i] = (Math.random() * 0.5 + 0.5) * (1 - depth * 0.3);
+      // Size variation based on depth - much smaller for fine dust
+      sizes[i] = (Math.random() * 0.3 + 0.2) * (1 - depth * 0.3);
     }
     
     return { 
@@ -110,7 +110,7 @@ export default function ParticleField() {
       // Update Y position with wave, breathing and turbulence
       positions[i3 + 1] += (waveX + waveZ + turbulence) * 0.008 * breathe;
       
-      // Mouse interaction - particles move away from cursor
+      // Mouse interaction - particles move away from cursor (more subtle)
       const mouseX = mouse.x * viewport.width * 0.5;
       const mouseY = mouse.y * viewport.height * 0.5;
       const dist = Math.sqrt(
@@ -118,8 +118,8 @@ export default function ParticleField() {
         Math.pow(positions[i3 + 1] - mouseY, 2)
       );
       
-      if (dist < 3) {
-        const force = (3 - dist) * 0.008;
+      if (dist < 2) {
+        const force = (2 - dist) * 0.004;
         positions[i3] += (positions[i3] - mouseX) * force;
         positions[i3 + 1] += (positions[i3 + 1] - mouseY) * force;
       }
@@ -180,7 +180,7 @@ export default function ParticleField() {
           void main() {
             vColor = color;
             vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-            gl_PointSize = size * (300.0 / -mvPosition.z);
+            gl_PointSize = size * (200.0 / -mvPosition.z);
             gl_Position = projectionMatrix * mvPosition;
           }
         `}
