@@ -51,7 +51,6 @@ README.md
 # AWS/Deployment
 cloudfront-config.json
 scripts/
-.github/
 engine.bin
 deploy*.sh
 
