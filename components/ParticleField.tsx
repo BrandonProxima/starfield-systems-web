@@ -26,9 +26,17 @@ function createParticleTexture() {
   return new THREE.CanvasTexture(canvas);
 }
 
-export default function ParticleField() {
+interface ScrollData {
+  position: number;
+  velocity: number;
+}
+
+export default function ParticleField({ scrollData = { position: 0, velocity: 0 } }: { scrollData?: ScrollData }) {
   const points = useRef<THREE.Points>(null!);
   const { mouse, viewport, camera } = useThree();
+  const initialPositions = useRef<Float32Array | null>(null);
+  const smoothedPosition = useRef(0);
+  const smoothedVelocity = useRef(0);
   
   const { positions, colors, sizes, particleTexture } = useMemo(() => {
     const positions = new Float32Array(PARTICLE_COUNT * 3);
@@ -87,6 +95,9 @@ export default function ParticleField() {
       }
     }
     
+    // Store initial positions for reference
+    initialPositions.current = new Float32Array(positions);
+    
     return { 
       positions, 
       colors, 
@@ -96,33 +107,55 @@ export default function ParticleField() {
   }, []);
   
   useFrame((state) => {
-    if (!points.current) return;
+    if (!points.current || !initialPositions.current) return;
     
     const time = state.clock.getElapsedTime();
     const positions = points.current.geometry.attributes.position.array as Float32Array;
     const sizes = points.current.geometry.attributes.size.array as Float32Array;
     
+    // Smooth the scroll data internally for jank-free movement
+    smoothedPosition.current += (scrollData.position - smoothedPosition.current) * 0.04;
+    smoothedVelocity.current += (scrollData.velocity - smoothedVelocity.current) * 0.08;
+    
+    // Use smoothed values
+    const safeScrollData = {
+      position: Math.min(1, Math.max(0, smoothedPosition.current)),
+      velocity: Math.min(1, Math.max(-1, smoothedVelocity.current))
+    };
+    
     // Update camera position uniform for distance calculations
     const material = points.current.material as THREE.ShaderMaterial;
     material.uniforms.uCameraPos.value.copy(state.camera.position);
     
-    // Wave animation with turbulence
+    // Wave animation with turbulence and scroll effects
     for (let i = 0; i < PARTICLE_COUNT; i++) {
       const i3 = i * 3;
-      const x = positions[i3];
-      const y = positions[i3 + 1];
-      const z = positions[i3 + 2];
+      const originalX = initialPositions.current[i3];
+      const originalY = initialPositions.current[i3 + 1];
+      const originalZ = initialPositions.current[i3 + 2];
       
-      // Create wave pattern with turbulence
-      const waveX = Math.sin(x * 0.1 + time * 0.5) * 0.3;
-      const waveZ = Math.cos(z * 0.1 + time * 0.3) * 0.2;
-      const turbulence = Math.sin(y * 0.2 + time * 0.8) * 0.05;
+      // Original wave patterns - these always run
+      const waveX = Math.sin(originalX * 0.1 + time * 0.5) * 0.3;
+      const waveZ = Math.cos(originalZ * 0.1 + time * 0.3) * 0.2;
+      const turbulence = Math.sin(originalY * 0.2 + time * 0.8) * 0.05;
       
-      // Breathing effect
+      // Breathing effect - always active
       const breathe = Math.sin(time * 0.25) * 0.1 + 1;
       
-      // Update Y position with wave, breathing and turbulence
-      positions[i3 + 1] += (waveX + waveZ + turbulence) * 0.008 * breathe;
+      // Natural position based on original animation
+      const naturalX = originalX + waveX;
+      const naturalY = originalY + (waveX + waveZ + turbulence) * 0.008 * breathe;
+      const naturalZ = originalZ + waveZ;
+      
+      // Scroll effects are ADDITIVE to natural movement
+      const scrollDriftX = safeScrollData.velocity * originalY * 0.005;
+      const scrollDriftY = safeScrollData.velocity * Math.abs(originalX) * 0.002;
+      const scrollDriftZ = -safeScrollData.position * 2 + safeScrollData.velocity * 0.3;
+      
+      // Combine natural movement with scroll effects
+      positions[i3] = naturalX + scrollDriftX;
+      positions[i3 + 1] = naturalY + scrollDriftY;
+      positions[i3 + 2] = naturalZ + scrollDriftZ;
       
       // Mouse interaction - particles move away from cursor (more subtle)
       const mouseX = mouse.x * viewport.width * 0.5;
@@ -138,21 +171,30 @@ export default function ParticleField() {
         positions[i3 + 1] += (positions[i3 + 1] - mouseY) * force;
       }
       
-      // Dynamic size based on camera distance
+      // Dynamic size based on camera distance and scroll velocity
       const distToCamera = Math.sqrt(
         Math.pow(positions[i3] - camera.position.x, 2) +
         Math.pow(positions[i3 + 1] - camera.position.y, 2) +
         Math.pow(positions[i3 + 2] - camera.position.z, 2)
       );
-      sizes[i] = (1 - distToCamera / 50) * (Math.sin(time + i * 0.1) * 0.1 + 0.9);
+      // Very minimal size change
+      const velocityScale = 1 + Math.abs(safeScrollData.velocity) * 0.03;
+      sizes[i] = (1 - distToCamera / 50) * 0.95 * velocityScale;
     }
     
     points.current.geometry.attributes.position.needsUpdate = true;
     points.current.geometry.attributes.size.needsUpdate = true;
     
-    // Rotate the entire field slowly
-    points.current.rotation.y = time * 0.03;
-    points.current.rotation.x = Math.sin(time * 0.1) * 0.02;
+    // Natural rotation that always happens
+    const naturalRotationY = time * 0.03;
+    const naturalRotationX = Math.sin(time * 0.1) * 0.02;
+    
+    // Add subtle scroll influence on top of natural rotation
+    const scrollRotationY = safeScrollData.position * 0.15;
+    const scrollRotationX = safeScrollData.velocity * 0.008;
+    
+    points.current.rotation.y = naturalRotationY + scrollRotationY;
+    points.current.rotation.x = naturalRotationX + scrollRotationX;
   });
   
   return (
