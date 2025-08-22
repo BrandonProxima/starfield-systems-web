@@ -51,9 +51,9 @@ export default function LogoMesh({ scrollData = { position: 0, velocity: 0 } }: 
     // Floating animation - moves forward at depth
     meshRef.current.position.z = Math.sin(time * 0.5) * 0.2 + scrollData.position * 2;
     
-    // Fixed opacity - always visible at 15%, hover brings to 25%
-    const baseOpacity = 0.15;
-    const targetOpacity = hovered ? 0.25 : baseOpacity;
+    // Scroll-based opacity: 10% at surface, up to 30% at full scroll
+    const scrollOpacity = 0.1 + scrollData.position * 0.2;
+    const targetOpacity = hovered ? Math.max(scrollOpacity + 0.1, 0.3) : scrollOpacity;
     
     if (meshRef.current.material) {
       const material = meshRef.current.material as THREE.MeshBasicMaterial;
@@ -72,7 +72,7 @@ export default function LogoMesh({ scrollData = { position: 0, velocity: 0 } }: 
       <meshBasicMaterial
         map={logoTexture}
         transparent
-        opacity={0.15}
+        opacity={0.1}
         blending={THREE.AdditiveBlending}
         side={THREE.DoubleSide}
         alphaTest={0.1}
