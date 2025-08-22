@@ -4,7 +4,6 @@ import dynamic from "next/dynamic";
 import { Suspense, useEffect, useState, useRef } from "react";
 import LoadingScreen from "@/components/LoadingScreen";
 import ErrorBoundary from "@/components/ErrorBoundary";
-import ScrollUI from "@/components/ScrollUI";
 
 const ThreeScene = dynamic(() => import("@/components/ThreeScene"), {
   ssr: false,
@@ -105,8 +104,6 @@ export default function Home() {
           </Suspense>
         </ErrorBoundary>
         
-        {/* Scroll UI overlay */}
-        <ScrollUI scrollData={scrollData} />
       </div>
       
       {/* Invisible scroll container */}

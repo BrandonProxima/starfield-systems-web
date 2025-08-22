@@ -7,9 +7,10 @@ import { BlendFunction } from "postprocessing";
 import * as THREE from "three";
 import ParticleField from "./ParticleField";
 import PrecisionGrid from "./PrecisionGrid";
-import ScrollHint3D from "./ScrollHint3D";
 import LogoMesh from "./LogoMesh";
 import CameraController from "./CameraController";
+import ParticleTrails from "./ParticleTrails";
+import ConstellationConnections from "./ConstellationConnections";
 
 interface ScrollData {
   position: number;
@@ -54,8 +55,9 @@ function Scene({ scrollData }: { scrollData: ScrollData }) {
       
       <CameraController scrollData={scrollData} />
       <ParticleField scrollData={scrollData} />
-      <LogoMesh />
-      <ScrollHint3D />
+      <ParticleTrails scrollData={scrollData} />
+      <ConstellationConnections scrollData={scrollData} />
+      <LogoMesh scrollData={scrollData} />
     </>
   );
 }

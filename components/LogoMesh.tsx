@@ -5,10 +5,16 @@ import { useFrame, useThree, useLoader } from "@react-three/fiber";
 import { TextureLoader } from "three";
 import * as THREE from "three";
 
-export default function LogoMesh() {
+interface ScrollData {
+  position: number;
+  velocity: number;
+}
+
+export default function LogoMesh({ scrollData = { position: 0, velocity: 0 } }: { scrollData?: ScrollData }) {
   const meshRef = useRef<THREE.Mesh>(null!);
   const { mouse, viewport } = useThree();
   const [hovered, setHovered] = useState(false);
+  const smoothedOpacity = useRef(0);
   
   // Load the logo texture
   const logoTexture = useLoader(TextureLoader, "/starfield-systems-logo.png");
@@ -26,8 +32,9 @@ export default function LogoMesh() {
     
     const time = state.clock.getElapsedTime();
     
-    // Breathing effect
-    const breathe = Math.sin(time * 0.25) * 0.05 + 1;
+    // Breathing effect - stronger at depth
+    const breatheIntensity = 1 + scrollData.position * 0.2;
+    const breathe = Math.sin(time * 0.25) * 0.05 * breatheIntensity + 1;
     meshRef.current.scale.set(breathe, breathe, 1);
     
     // Mouse parallax effect - more subtle
@@ -42,14 +49,21 @@ export default function LogoMesh() {
     meshRef.current.rotation.y = mouse.x * 0.05;
     meshRef.current.rotation.x = -mouse.y * 0.025;
     
-    // Floating animation
-    meshRef.current.position.z = Math.sin(time * 0.5) * 0.2;
+    // Floating animation - moves forward at depth
+    meshRef.current.position.z = Math.sin(time * 0.5) * 0.2 + scrollData.position * 2;
     
-    // Hover effect
-    const targetOpacity = hovered ? 1 : 0.9;
+    // Scroll-based opacity: 10% at surface, up to 30% at full scroll
+    const scrollOpacity = 0.1 + scrollData.position * 0.2;
+    
+    // Smooth the opacity transition
+    smoothedOpacity.current += (scrollOpacity - smoothedOpacity.current) * 0.02;
+    
+    // Combined with hover effect
+    const targetOpacity = hovered ? Math.max(smoothedOpacity.current, 0.5) : smoothedOpacity.current;
+    
     if (meshRef.current.material) {
-      (meshRef.current.material as THREE.MeshBasicMaterial).opacity += 
-        (targetOpacity - (meshRef.current.material as THREE.MeshBasicMaterial).opacity) * 0.1;
+      const material = meshRef.current.material as THREE.MeshBasicMaterial;
+      material.opacity += (targetOpacity - material.opacity) * 0.1;
     }
   });
   
@@ -64,9 +78,10 @@ export default function LogoMesh() {
       <meshBasicMaterial
         map={logoTexture}
         transparent
-        opacity={0.9}
+        opacity={0.1}
         blending={THREE.AdditiveBlending}
         side={THREE.DoubleSide}
+        alphaTest={0.1}
       />
     </mesh>
   );

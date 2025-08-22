@@ -6,6 +6,12 @@ import * as THREE from "three";
 
 const PARTICLE_COUNT = 12000;
 
+// Smoothstep helper function
+function smoothstep(edge0: number, edge1: number, x: number): number {
+  const t = Math.max(0, Math.min(1, (x - edge0) / (edge1 - edge0)));
+  return t * t * (3 - 2 * t);
+}
+
 // Create circular particle texture
 function createParticleTexture() {
   const canvas = document.createElement('canvas');
@@ -37,6 +43,7 @@ export default function ParticleField({ scrollData = { position: 0, velocity: 0 
   const initialPositions = useRef<Float32Array | null>(null);
   const smoothedPosition = useRef(0);
   const smoothedVelocity = useRef(0);
+  const logoPosition = useRef(new THREE.Vector3(0, 0, 0));
   
   const { positions, colors, sizes, particleTexture } = useMemo(() => {
     const positions = new Float32Array(PARTICLE_COUNT * 3);
@@ -126,6 +133,7 @@ export default function ParticleField({ scrollData = { position: 0, velocity: 0 
     // Update camera position uniform for distance calculations
     const material = points.current.material as THREE.ShaderMaterial;
     material.uniforms.uCameraPos.value.copy(state.camera.position);
+    material.uniforms.uScrollDepth.value = smoothedPosition.current;
     
     // Wave animation with turbulence and scroll effects
     for (let i = 0; i < PARTICLE_COUNT; i++) {
@@ -152,10 +160,35 @@ export default function ParticleField({ scrollData = { position: 0, velocity: 0 
       const scrollDriftY = safeScrollData.velocity * Math.abs(originalX) * 0.002;
       const scrollDriftZ = -safeScrollData.position * 2 + safeScrollData.velocity * 0.3;
       
-      // Combine natural movement with scroll effects
-      positions[i3] = naturalX + scrollDriftX;
-      positions[i3 + 1] = naturalY + scrollDriftY;
-      positions[i3 + 2] = naturalZ + scrollDriftZ;
+      // Logo attraction at deep scroll (80%+)
+      let logoAttractionX = 0;
+      let logoAttractionY = 0;
+      let logoAttractionZ = 0;
+      
+      if (safeScrollData.position > 0.8) {
+        const attractionStrength = smoothstep(0.8, 1.0, safeScrollData.position) * 0.3;
+        const logoZ = safeScrollData.position * 2; // Logo moves forward with scroll
+        
+        // Calculate distance to logo position (0, 0, logoZ)
+        const distToLogo = Math.sqrt(
+          naturalX * naturalX + 
+          naturalY * naturalY + 
+          (naturalZ - logoZ) * (naturalZ - logoZ)
+        );
+        
+        // Only attract particles within a certain radius
+        if (distToLogo < 15) {
+          const attractionForce = (1 - distToLogo / 15) * attractionStrength;
+          logoAttractionX = -naturalX * attractionForce * 0.2;
+          logoAttractionY = -naturalY * attractionForce * 0.2;
+          logoAttractionZ = (logoZ - naturalZ) * attractionForce * 0.1;
+        }
+      }
+      
+      // Combine all effects
+      positions[i3] = naturalX + scrollDriftX + logoAttractionX;
+      positions[i3 + 1] = naturalY + scrollDriftY + logoAttractionY;
+      positions[i3 + 2] = naturalZ + scrollDriftZ + logoAttractionZ;
       
       // Mouse interaction - particles move away from cursor (more subtle)
       const mouseX = mouse.x * viewport.width * 0.5;
@@ -229,7 +262,8 @@ export default function ParticleField({ scrollData = { position: 0, velocity: 0 
         depthWrite={false}
         uniforms={{
           pointTexture: { value: particleTexture },
-          uCameraPos: { value: new THREE.Vector3() }
+          uCameraPos: { value: new THREE.Vector3() },
+          uScrollDepth: { value: 0 }
         }}
         vertexShader={`
           attribute float size;
@@ -246,17 +280,78 @@ export default function ParticleField({ scrollData = { position: 0, velocity: 0 
         `}
         fragmentShader={`
           uniform sampler2D pointTexture;
+          uniform float uScrollDepth;
           varying vec3 vColor;
           varying float vDistance;
+          
+          vec3 hslToRgb(vec3 hsl) {
+            float h = hsl.x;
+            float s = hsl.y;
+            float l = hsl.z;
+            
+            float c = (1.0 - abs(2.0 * l - 1.0)) * s;
+            float x = c * (1.0 - abs(mod(h * 6.0, 2.0) - 1.0));
+            float m = l - c * 0.5;
+            
+            vec3 rgb;
+            if (h < 1.0/6.0) rgb = vec3(c, x, 0.0);
+            else if (h < 2.0/6.0) rgb = vec3(x, c, 0.0);
+            else if (h < 3.0/6.0) rgb = vec3(0.0, c, x);
+            else if (h < 4.0/6.0) rgb = vec3(0.0, x, c);
+            else if (h < 5.0/6.0) rgb = vec3(x, 0.0, c);
+            else rgb = vec3(c, 0.0, x);
+            
+            return rgb + vec3(m);
+          }
+          
+          vec3 rgbToHsl(vec3 rgb) {
+            float maxVal = max(max(rgb.r, rgb.g), rgb.b);
+            float minVal = min(min(rgb.r, rgb.g), rgb.b);
+            float l = (maxVal + minVal) * 0.5;
+            
+            if (maxVal == minVal) {
+              return vec3(0.0, 0.0, l);
+            }
+            
+            float d = maxVal - minVal;
+            float s = l > 0.5 ? d / (2.0 - maxVal - minVal) : d / (maxVal + minVal);
+            
+            float h;
+            if (maxVal == rgb.r) h = (rgb.g - rgb.b) / d + (rgb.g < rgb.b ? 6.0 : 0.0);
+            else if (maxVal == rgb.g) h = (rgb.b - rgb.r) / d + 2.0;
+            else h = (rgb.r - rgb.g) / d + 4.0;
+            h /= 6.0;
+            
+            return vec3(h, s, l);
+          }
+          
           void main() {
             vec2 uv = gl_PointCoord;
             vec4 textureColor = texture2D(pointTexture, uv);
             
-            // Base particle color
-            vec4 baseColor = vec4(vColor, 0.7) * textureColor;
+            // Base particle color with depth-based temperature shift
+            vec3 hsl = rgbToHsl(vColor);
+            
+            // Subtle temperature shift: cold (blue) at surface -> warm (amber) at depth
+            // Max 15% hue shift from blue-white (0.55) to warm-amber (0.08)
+            float depthInfluence = smoothstep(0.0, 1.0, uScrollDepth);
+            float targetHue = mix(0.55, 0.08, depthInfluence * 0.15);
+            
+            // Only shift particles that aren't already amber
+            if (vColor.r < 1.5) { // Not an amber particle
+              hsl.x = mix(hsl.x, targetHue, depthInfluence * 0.15);
+              // Slightly increase saturation at depth
+              hsl.y = min(1.0, hsl.y + depthInfluence * 0.05);
+            }
+            
+            vec3 shiftedColor = hslToRgb(hsl);
+            vec4 baseColor = vec4(shiftedColor, 0.7) * textureColor;
             
             // Slate halo for distant particles - #64748B = rgb(100, 116, 139)
             vec3 slateColor = vec3(0.392, 0.455, 0.545);
+            
+            // Warm the slate color at depth too
+            vec3 warmSlate = mix(slateColor, vec3(0.545, 0.455, 0.392), depthInfluence * 0.3);
             
             // Distance-based slate halo (peaks around distance 20-30)
             float haloStrength = smoothstep(15.0, 30.0, vDistance) * smoothstep(40.0, 25.0, vDistance);
@@ -267,7 +362,7 @@ export default function ParticleField({ scrollData = { position: 0, velocity: 0 
             float haloAlpha = (1.0 - smoothstep(0.4, 1.2, haloDistance)) * haloStrength;
             
             // Blend slate halo with particle
-            vec3 finalColor = mix(baseColor.rgb, slateColor, haloAlpha * 0.5);
+            vec3 finalColor = mix(baseColor.rgb, warmSlate, haloAlpha * 0.5);
             float finalAlpha = max(baseColor.a, haloAlpha * 0.3);
             
             gl_FragColor = vec4(finalColor, finalAlpha);
