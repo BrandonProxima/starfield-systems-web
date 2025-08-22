@@ -3,6 +3,7 @@
 import { useRef, useMemo } from "react";
 import { useFrame, useThree, useLoader } from "@react-three/fiber";
 import * as THREE from "three";
+import { CameraState } from "./SmoothCameraController";
 
 const PARTICLE_COUNT = 12000;
 
@@ -37,14 +38,12 @@ interface ScrollData {
   velocity: number;
 }
 
-import { PhysicsState } from "./ScrollPhysicsController";
-
 export default function ParticleField({ 
   scrollData = { position: 0, velocity: 0 },
-  physicsState 
+  cameraState 
 }: { 
   scrollData?: ScrollData;
-  physicsState?: PhysicsState | null;
+  cameraState?: CameraState | null;
 }) {
   const points = useRef<THREE.Points>(null!);
   const { mouse, viewport, camera } = useThree();
@@ -128,13 +127,13 @@ export default function ParticleField({
     const positions = points.current.geometry.attributes.position.array as Float32Array;
     const sizes = points.current.geometry.attributes.size.array as Float32Array;
     
-    // If we have physics state, use it for more dynamic movement
+    // If we have camera state, use it for more dynamic movement
     let movement = { x: 0, y: 0, z: 0 };
-    if (physicsState) {
+    if (cameraState) {
       movement = {
-        x: physicsState.velocity.x * 0.5,
-        y: physicsState.velocity.y * 0.5,
-        z: physicsState.velocity.z
+        x: cameraState.velocity.x * 0.5,
+        y: cameraState.velocity.y * 0.5,
+        z: cameraState.velocity.z
       };
     }
     

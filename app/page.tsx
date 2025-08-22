@@ -1,10 +1,9 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { Suspense, useEffect, useState, useRef, useCallback } from "react";
+import { Suspense, useEffect, useState } from "react";
 import LoadingScreen from "@/components/LoadingScreen";
 import ErrorBoundary from "@/components/ErrorBoundary";
-import ScrollPhysicsController, { PhysicsState } from "@/components/ScrollPhysicsController";
 
 const ThreeScene = dynamic(() => import("@/components/ThreeScene"), {
   ssr: false,
@@ -28,7 +27,6 @@ function WebGLFallback() {
 
 export default function Home() {
   const [hasWebGL, setHasWebGL] = useState(true);
-  const [physicsState, setPhysicsState] = useState<PhysicsState | null>(null);
   
   useEffect(() => {
     // Check for WebGL support
@@ -41,15 +39,8 @@ export default function Home() {
     }
   }, []);
   
-  const handlePhysicsUpdate = useCallback((state: PhysicsState) => {
-    setPhysicsState(state);
-  }, []);
-  
   return (
     <>
-      {/* Physics controller */}
-      <ScrollPhysicsController onPhysicsUpdate={handlePhysicsUpdate} />
-      
       {/* Fixed Three.js scene */}
       <div className="fixed inset-0 w-full h-full bg-background">
         {/* Grain texture overlay */}
@@ -61,7 +52,7 @@ export default function Home() {
         {/* 3D Scene with error boundary */}
         <ErrorBoundary>
           <Suspense fallback={<LoadingScreen />}>
-            {hasWebGL ? <ThreeScene physicsState={physicsState} /> : <WebGLFallback />}
+            {hasWebGL ? <ThreeScene /> : <WebGLFallback />}
           </Suspense>
         </ErrorBoundary>
       </div>
