@@ -14,10 +14,12 @@ export const metadata: Metadata = {
   description: "Precision technology company",
   keywords: ["technology", "precision", "innovation"],
   authors: [{ name: "Starfield Systems" }],
+  // Next.js 15 automatically handles favicon.ico in the app directory
+  // Safari needs explicit apple-touch-icon
   icons: {
-    icon: "/favicon.ico",
-    shortcut: "/favicon.ico",
-    apple: "/apple-touch-icon.png",
+    apple: [
+      { url: "/apple-touch-icon.png" }
+    ]
   },
   openGraph: {
     title: "Starfield Systems",
