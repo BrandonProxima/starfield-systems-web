@@ -8,17 +8,19 @@ import * as THREE from "three";
 import ParticleField from "./ParticleField";
 import PrecisionGrid from "./PrecisionGrid";
 import LogoMesh from "./LogoMesh";
-import CameraController from "./CameraController";
+import SpaceCamera from "./SpaceCamera";
 import ParticleTrails from "./ParticleTrails";
 import ConstellationConnections from "./ConstellationConnections";
+import { PhysicsState } from "./ScrollPhysicsController";
 
-interface ScrollData {
-  position: number;
-  velocity: number;
-}
-
-function Scene({ scrollData }: { scrollData: ScrollData }) {
+function Scene({ physicsState }: { physicsState: PhysicsState | null }) {
   const { viewport } = useThree();
+  
+  // Convert physics state to scroll-like data for compatibility
+  const scrollData = physicsState ? {
+    position: Math.min(1, Math.max(0, (15 - physicsState.position.z) / 30)),
+    velocity: physicsState.velocity.z
+  } : { position: 0, velocity: 0 };
   
   return (
     <>
@@ -53,8 +55,8 @@ function Scene({ scrollData }: { scrollData: ScrollData }) {
         color="#F59E0B" 
       />
       
-      <CameraController scrollData={scrollData} />
-      <ParticleField scrollData={scrollData} />
+      <SpaceCamera physicsState={physicsState} />
+      <ParticleField scrollData={scrollData} physicsState={physicsState} />
       <ParticleTrails scrollData={scrollData} />
       <ConstellationConnections scrollData={scrollData} />
       <LogoMesh scrollData={scrollData} />
@@ -62,7 +64,18 @@ function Scene({ scrollData }: { scrollData: ScrollData }) {
   );
 }
 
-export default function ThreeScene({ scrollData = { position: 0, velocity: 0 } }: { scrollData?: ScrollData }) {
+export default function ThreeScene({ physicsState }: { physicsState: PhysicsState | null }) {
+  // Convert physics state for post-processing effects
+  const scrollData = physicsState ? {
+    position: Math.min(1, Math.max(0, (15 - physicsState.position.z) / 30)),
+    velocity: physicsState ? physicsState.velocity.length() : 0
+  } : { position: 0, velocity: 0 };
+  
+  // Check if we're in auto-return mode (too close/far from logo and idle)
+  const isReturning = physicsState && 
+    (physicsState.position.z < 3 || physicsState.position.z > 25 || 
+     Math.abs(physicsState.position.z - 15) > 12) && 
+    physicsState.velocity.length() < 0.1;
   return (
     <div className="absolute inset-0 w-full h-full z-10" style={{ pointerEvents: 'none' }}>
       <Canvas
@@ -76,17 +89,17 @@ export default function ThreeScene({ scrollData = { position: 0, velocity: 0 } }
         dpr={[1, 2]}
         style={{ width: '100%', height: '100%', pointerEvents: 'none' }}
       >
-        <Scene scrollData={scrollData} />
+        <Scene physicsState={physicsState} />
         <EffectComposer multisampling={0}>
           <Bloom 
-            intensity={0.5 + Math.abs(scrollData.velocity) * 0.2}
-            luminanceThreshold={0.8 - Math.abs(scrollData.velocity) * 0.1}
+            intensity={0.5 + Math.abs(scrollData.velocity) * 0.2 + (isReturning ? 0.2 : 0)}
+            luminanceThreshold={0.8 - Math.abs(scrollData.velocity) * 0.1 - (isReturning ? 0.1 : 0)}
             luminanceSmoothing={0.1}
             mipmapBlur
           />
           <Vignette
             offset={0.1}
-            darkness={0.8 + scrollData.position * 0.05}
+            darkness={0.8 + scrollData.position * 0.05 + (isReturning ? 0.1 : 0)}
             eskil={false}
           />
           <Noise

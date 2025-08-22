@@ -37,7 +37,15 @@ interface ScrollData {
   velocity: number;
 }
 
-export default function ParticleField({ scrollData = { position: 0, velocity: 0 } }: { scrollData?: ScrollData }) {
+import { PhysicsState } from "./ScrollPhysicsController";
+
+export default function ParticleField({ 
+  scrollData = { position: 0, velocity: 0 },
+  physicsState 
+}: { 
+  scrollData?: ScrollData;
+  physicsState?: PhysicsState | null;
+}) {
   const points = useRef<THREE.Points>(null!);
   const { mouse, viewport, camera } = useThree();
   const initialPositions = useRef<Float32Array | null>(null);
@@ -120,6 +128,16 @@ export default function ParticleField({ scrollData = { position: 0, velocity: 0 
     const positions = points.current.geometry.attributes.position.array as Float32Array;
     const sizes = points.current.geometry.attributes.size.array as Float32Array;
     
+    // If we have physics state, use it for more dynamic movement
+    let movement = { x: 0, y: 0, z: 0 };
+    if (physicsState) {
+      movement = {
+        x: physicsState.velocity.x * 0.5,
+        y: physicsState.velocity.y * 0.5,
+        z: physicsState.velocity.z
+      };
+    }
+    
     // Smooth the scroll data internally for jank-free movement
     smoothedPosition.current += (scrollData.position - smoothedPosition.current) * 0.04;
     smoothedVelocity.current += (scrollData.velocity - smoothedVelocity.current) * 0.08;
@@ -155,10 +173,16 @@ export default function ParticleField({ scrollData = { position: 0, velocity: 0 
       const naturalY = originalY + (waveX + waveZ + turbulence) * 0.008 * breathe;
       const naturalZ = originalZ + waveZ;
       
-      // Scroll effects are ADDITIVE to natural movement
-      const scrollDriftX = safeScrollData.velocity * originalY * 0.005;
-      const scrollDriftY = safeScrollData.velocity * Math.abs(originalX) * 0.002;
-      const scrollDriftZ = -safeScrollData.position * 2 + safeScrollData.velocity * 0.3;
+      // Physics-based movement effects
+      const scrollDriftX = movement.x * originalY * 0.01 + safeScrollData.velocity * originalY * 0.005;
+      const scrollDriftY = movement.y * Math.abs(originalX) * 0.01 + safeScrollData.velocity * Math.abs(originalX) * 0.002;
+      const scrollDriftZ = -movement.z * 0.5 - safeScrollData.position * 2 + safeScrollData.velocity * 0.3;
+      
+      // Add flow field effect based on position
+      const flowAngle = time * 0.1 + originalX * 0.1 + originalY * 0.1;
+      const flowStrength = Math.sin(originalZ * 0.2 + time * 0.3) * 0.02;
+      const flowX = Math.cos(flowAngle) * flowStrength;
+      const flowY = Math.sin(flowAngle) * flowStrength;
       
       // Logo attraction at deep scroll (80%+)
       let logoAttractionX = 0;
@@ -185,9 +209,9 @@ export default function ParticleField({ scrollData = { position: 0, velocity: 0 
         }
       }
       
-      // Combine all effects
-      positions[i3] = naturalX + scrollDriftX + logoAttractionX;
-      positions[i3 + 1] = naturalY + scrollDriftY + logoAttractionY;
+      // Combine all effects including flow field
+      positions[i3] = naturalX + scrollDriftX + logoAttractionX + flowX;
+      positions[i3 + 1] = naturalY + scrollDriftY + logoAttractionY + flowY;
       positions[i3 + 2] = naturalZ + scrollDriftZ + logoAttractionZ;
       
       // Mouse interaction - particles move away from cursor (more subtle)
