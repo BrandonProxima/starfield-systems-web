@@ -41,3 +41,24 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Documentation (sensitive)
+*.md
+DEPLOYMENT.md
+DNS*.md
+README.md
+
+# AWS/Deployment
+cloudfront-config.json
+scripts/
+.github/
+engine.bin
+deploy*.sh
+
+# Unused assets
+file.svg
+globe.svg
+window.svg
+next.svg
+vercel.svg
+index.txt
