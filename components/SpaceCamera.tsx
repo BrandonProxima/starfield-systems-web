@@ -97,8 +97,10 @@ export default function SpaceCamera({ physicsState }: SpaceCameraProps) {
     // Dynamic FOV based on velocity (speed effect) and boundary warning
     const speedFOV = 50 + Math.min(avgVelocity.length() * 5, 20);
     const boundaryFOV = speedFOV - boundaryWarning.current * 5; // Narrow FOV near boundaries
-    camera.fov += (boundaryFOV - camera.fov) * 0.05;
-    camera.updateProjectionMatrix();
+    if (camera instanceof THREE.PerspectiveCamera) {
+      camera.fov += (boundaryFOV - camera.fov) * 0.05;
+      camera.updateProjectionMatrix();
+    }
     
     // Add boundary vignette effect through camera rotation wobble
     if (boundaryWarning.current > 0) {
@@ -115,7 +117,9 @@ export default function SpaceCamera({ physicsState }: SpaceCameraProps) {
   useEffect(() => {
     camera.near = 0.1;
     camera.far = 1000;
-    camera.fov = 50;
+    if (camera instanceof THREE.PerspectiveCamera) {
+      camera.fov = 50;
+    }
     camera.updateProjectionMatrix();
   }, [camera]);
   

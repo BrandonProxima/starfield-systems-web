@@ -18,9 +18,18 @@ interface SmoothCameraControllerProps {
 export default function SmoothCameraController({ onCameraUpdate }: SmoothCameraControllerProps) {
   const { camera } = useThree();
   
-  // Camera state
+  // Simple intro state
+  const introRef = useRef({
+    active: true,
+    startTime: Date.now(),
+    duration: 4000, // 4 seconds
+    startZ: 50,
+    endZ: 15
+  });
+  
+  // Camera state - start far out for intro
   const cameraState = useRef<CameraState>({
-    position: new THREE.Vector3(0, 0, 15),
+    position: new THREE.Vector3(0, 0, 50), // Start far away
     target: new THREE.Vector3(0, 0, 0),
     velocity: new THREE.Vector3(0, 0, 0),
     isAutoReframing: false
@@ -131,6 +140,42 @@ export default function SmoothCameraController({ onCameraUpdate }: SmoothCameraC
   useFrame((state, delta) => {
     const currentState = cameraState.current;
     const deltaTime = Math.min(delta, 0.1); // Cap delta time
+    
+    // Simple intro animation
+    if (introRef.current.active) {
+      const elapsed = Date.now() - introRef.current.startTime;
+      const progress = Math.min(elapsed / introRef.current.duration, 1);
+      
+      // Simple cubic ease in-out
+      const eased = progress < 0.5 
+        ? 4 * progress * progress * progress 
+        : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+      
+      // Animate Z position only for stability
+      currentState.position.z = introRef.current.startZ - 
+        (introRef.current.startZ - introRef.current.endZ) * eased;
+      
+      // End intro when complete
+      if (progress >= 1) {
+        introRef.current.active = false;
+        currentState.position.z = introRef.current.endZ;
+      }
+      
+      // Update camera
+      camera.position.copy(currentState.position);
+      camera.lookAt(currentState.target);
+      
+      // Update callback
+      onCameraUpdate({
+        ...currentState,
+        position: currentState.position.clone(),
+        target: currentState.target.clone(),
+        velocity: currentState.velocity.clone(),
+      });
+      
+      // Skip normal controls during intro
+      return;
+    }
     
     // Check if user is idle
     const timeSinceLastMove = Date.now() - lastMoveTime.current;
